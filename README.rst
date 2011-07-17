@@ -1,7 +1,7 @@
 About
 =====
 
-![logo](https://github.com/.../static/hyson.png)
+.. image:: https://github.com/Axion/Hyson/blob/master/static/hyson.png?raw=true
 
 Hyson(Chinese green tea) is a django application which provides various extensions for simplier Ext.js integration
 including Ext Direct implementation for class based views, Model and Form converters.
