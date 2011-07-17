@@ -1,12 +1,13 @@
 import abc
+import datetime
+import time
 
 from django.db.models import Q
 from django.http import HttpResponse
 from django.views.generic import View
-from django.utils import simplejson
+from django.utils import simplejson, datetime_safe
 
 from hyson.utils import extract_form_fields
-
 
 def autodiscovery():
     """
@@ -58,6 +59,26 @@ def has_base(klass, base):
 
     return False
 
+
+
+class DjangoExtJSONEncoder(simplejson.JSONEncoder):
+    """
+    JSONEncoder subclass that knows how to encode date/time and decimal types.
+    """
+
+    def default(self, o):
+        if isinstance(o, datetime.datetime):
+            d = datetime_safe.new_datetime(o)
+            return int(time.mktime(d.timetuple()))
+        elif isinstance(o, datetime.date):
+            d = datetime_safe.new_date(o)
+            return int(time.mktime(d.timetuple()))
+        elif isinstance(o, datetime.time):
+            return int(time.mktime(o.timetuple()))
+        elif isinstance(o, decimal.Decimal):
+            return str(o)
+        else:
+            return super(DjangoExtJSONEncoder, self).default(o)
 
 class ExtResponseException(Exception):
     """
@@ -191,7 +212,7 @@ class Router(View):
     def get(self, request):
         pass
 
-    def _response(self, action, method, success, errors, tid, result = None):
+    def _response(self, action, method, success, errors, tid, result = None, total = None):
         """
         Construct JSON serialized response for single call
         """
@@ -205,9 +226,13 @@ class Router(View):
         }
 
         if result is not None:
-            response['result'] = result
+            if total is not None:
+                response['result'] = {'total': total, 'success': True, 'data': result}
+            else:
+                response['result'] = {'success': True, 'data': result}
+
         else:
-            response['result'] = {"errors": errors, "success": success}
+            response['result'] = {'errors': errors, 'success': success}
 
         return response
 
@@ -232,37 +257,56 @@ class Router(View):
             return self._response(action, method, True, None, tid)
 
 
-    def _handle_listview(self, action, method, tid, klass, data):
+    def _handle_listview(self, action, method, tid, klass, data, page, start, limit):
         instance = klass()
         #instance.request = request
         #instance.object = None
         #from django.core import serializers
-        instance.ext_data = data[0]
+        instance.ext_data = data
         object_list = instance.get_queryset()
+        total = None
 
-        results = list()
-        for object in object_list:
-            #print dir(object._meta)
+        if isinstance(object_list, list):
+            results = object_list
+        else:
+            results = list()
+            total = object_list.count()
+            page_size = instance.get_paginate_by(object_list)
+            if page_size:
+                # page size provided by view, use 'page' param from client
+                # TODO: Use pagination from Django?
+                # TODO: Handle wrong pages
+                object_list = object_list[page_size*page:page_size*(page+1)]
+            else:
+                # use 'start' and 'limit' params from client
+                object_list = object_list[start:start+limit]
 
+            for object in object_list:
 
-            fields = dict()
-            for field in object._meta._fields():
-                name = field.name
-                get_choice = 'get_%s_display' % name
-                get_id = '%s_id' %name
-
-                if hasattr(object, get_choice):
-                    value = getattr(object, get_choice)()
-                elif hasattr(object, get_id):
-                    value = getattr(object, get_id)
+                if isinstance(object, dict):
+                    fields = object
                 else:
-                    value = getattr(object, name)
+                    if hasattr(instance, '_finalize_entry'):
+                        fields = instance._finalize_entry(object)
+                    else:
+                        fields = dict()
+                        for field in object._meta._fields():
+                            name = field.name
+                            get_choice = 'get_%s_display' % name
+                            get_id = '%s_id' %name
 
-                fields[name] = value
-                        
-            results.append(fields)
+                            if hasattr(object, get_choice):
+                                value = getattr(object, get_choice)()
+                            elif hasattr(object, get_id):
+                                value = getattr(object, get_id)
+                            else:
+                                value = getattr(object, name)
 
-        return self._response(action, method, True, None, tid, results)
+                            fields[name] = value
+
+                results.append(fields)
+
+        return self._response(action, method, True, None, tid, results, total)
 
     def _do_request(self, request):
         """
@@ -278,10 +322,14 @@ class Router(View):
         if has_base(klass, BaseCreateView):
             return self._handle_createview(action, method, tid, klass, request)
         elif has_base(klass, BaseListView):
-            return self._handle_listview(action, method, tid, klass, data)
+            data = data[0]
+            page = int(data.get('page'))
+            start = int(data.get('start'))
+            limit = int(data.get('limit'))
+            return self._handle_listview(action, method, tid, klass, data, page, start, limit)
 
     def _wrap_response(self, response, upload):
-        response = simplejson.dumps(response, ensure_ascii=False)
+        response = simplejson.dumps(response, ensure_ascii=False, cls=DjangoExtJSONEncoder)
         if upload:
             return HttpResponse("<html><body><textarea>\n%s\n</textarea></body></html>" % response)
         else:
@@ -392,7 +440,7 @@ class ExtDirect(object):
     def _filter_ne(self, qs, param):
         val = self.ext_data.get(param)
 
-        if param is not None:
+        if val is not None:
             qs = qs.filter(**{'%s__%s' % (param, 'exact'): val})
 
         return qs

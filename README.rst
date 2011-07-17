@@ -1,6 +1,3 @@
-About
-=====
-
 .. image:: https://github.com/Axion/Hyson/blob/master/static/hyson.png?raw=true
 
 Hyson(Chinese green tea) is a django application which provides various extensions for simplier Ext.js integration
@@ -8,6 +5,8 @@ including Ext Direct implementation for class based views, Model and Form conver
 
 
 WARNING: This code is not production ready right now
+
+.. contents:: :local:
 
 Class based views and Ext Direct
 --------------------------------
@@ -130,8 +129,8 @@ you changes of you change yout morel or listview) or directly edit in your edito
                     name: "id"
                 },
                 {
-                    type: "int",
-                    name: "project"
+                    type: "string",
+                    name: "name"
                 },
                 ...
             ],
@@ -149,7 +148,6 @@ you changes of you change yout morel or listview) or directly edit in your edito
             ]
         });
     });
-
 
 
 
@@ -194,12 +192,133 @@ you can use helper method provided by ExtDirect to make things even shorter::
             return qs
 
 
+Returning only required fields
+``````````````````````````````
+
+By default hyson will send every field of model in queryset if you want to pass only a set of fields you can execute
+'values' call on your queryset, in this example only id and project fields will be passed::
+
+    class DataListView(BaseListView, ExtDirect):
+        model = DataModel
+
+        def get_queryset(self):
+            qs = self.model.objects.all()
+            return qs.values('project', 'id')
+
+
+Pagination
+``````````
+
+ExtDirect mixin will take care of pagination for you, if you provide 'paginate_by' property in your ListView class hyson
+will use this value when generating js for your view and will paginate using only this amount of items, if you don't
+provide paginate_by, hyson will use ranges provided by client's request.
+
+Changing queryset results
+'''''''''''''''''''''''''
+Please keep in mind that changing queryset in get_queryset may be a bad idea if you don't do it lazily and use
+pagination at the same time. In this case your modifications will be applied to EVERY element in queryset
+before subsetting.::
+
+    class DataListView(BaseListView, ExtDirect):
+        model = DataModel
+        painate_by = 10
+
+        def get_queryset(self):
+            qs = self.model.objects.all()
+
+            entries = list()
+            for link in qs:
+                entries.append({
+                    'id': link.pk,
+                    'link': "http://" + link.link,
+                    'size': link.internal_size
+                })
+
+            return entries
+
+depending on the number of DataModel entries, this example may be terrible slow. This can be resolved by using two
+different approaches - you can move any code that outputs data to methods of model(which is the right way of
+doing things if you need to use this in many places) or define '_finalize_entry' function in your ListView class,
+it will be called for every QuerySet entry before serializing.::
+
+    class DataListView(BaseListView, ExtDirect):
+        model = DataModel
+        painate_by = 10
+
+        def get_queryset(self):
+            return self.model.objects.all()
+
+        def _finalize_entry(self, link):
+            return {
+                'id': link.pk,
+                'link': "http://" + link.link,
+                'size': link.internal_size
+            }
+
+
+
 Converting models
 -----------------
 
 Hyson provides a command to turn your model definition into Ext.js one.
 
-For example of you have a model like:
+For example of you have a model you can convert it using model_to_extmodel command:::
+
+    ./manage.py model_to_extmodel your_app.models.DataModel > ./static/DataModel.js
+
+Outputting Ext.js code from Python
+----------------------------------
+
+Hyson provides a basic number of classes to output javascript code from python, this is mostly used
+internally in converters but may be usefull in some cases.::
+
+    grid = ExtGrid()
+    print grid
+
+will output grid with default predefined parameters::
+
+    {
+        xtype: "grid",
+        store: {
+            proxy: {
+                type: "direct"
+            }
+        }
+    }
+
+if you pass as_class and name params to constructor, instead of raw component data you will get full extendable class::
+
+    grid = ExtGrid(as_class=True, name=MyGrid)
+    print grid
+
+output::
+
+    Ext.define('MyGrid', {
+        extend: 'Ext.grid.Panel',
+        xtype: "grid",
+        store: {
+            proxy: {
+                type: "direct"
+            }
+        }
+    });
+
+passing any other params to constructor will append them to list of outputed properties::
+
+    grid = ExtGrid(width="90%")
+    print grid
+
+output::
+
+    {
+        xtype: "grid",
+        store: {
+            proxy: {
+                type: "direct"
+            }
+        },
+        width: "90%"
+    }
 
 
 License

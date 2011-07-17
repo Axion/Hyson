@@ -91,12 +91,16 @@ class ExtWindow(ExtComponent):
     }
 
 class ExtGrid(ExtComponent):
-
+    class_name = "Ext.grid.Panel"
     defaults = {
         'xtype': 'grid',
         'store': {
             'proxy': {
-                'type': 'direct'
+                'type': 'direct',
+                'reader': {
+                    'type': 'json',
+                    'root': 'data'
+                }
             }
         },
     }

@@ -69,4 +69,3 @@ class Command(BaseCommand):
 
         print unicode(ExtWindow(as_class=True, name=view.__name__+"Window", items=grid, title=title)).encode("utf-8") +\
             "\n\n" + unicode(convert(model)).encode("utf-8")
-
