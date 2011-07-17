@@ -6,18 +6,12 @@ from hyson.field_types import FIELD_TYPES
 from hyson.utils import dejsonize
 
 def convert(klass):
-    #model_name = instance().__class__.__name__
     model_name = klass.__name__
 
     fields = list()
     validators = list()
 
-    #for field_name in instance._meta.get_all_field_names():
-    #    field = instance._meta.get_field_by_name(field_name)[0]
-
-    #for field_name in klass._meta.get_all_field_names():
     for field in klass._meta._fields():
-        #field = klass._meta.get_field_by_name(field_name)[0]
 
         field_class = field.__class__.__name__
 

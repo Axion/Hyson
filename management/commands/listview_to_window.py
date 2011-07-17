@@ -25,7 +25,7 @@ class Command(BaseCommand):
         for field in instance._meta._fields():
 
             if field.name == 'id':
-                continue1
+                continue
 
             #field = instance._meta.get_field_by_name(field_name)[0]
 

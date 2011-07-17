@@ -7,6 +7,8 @@ Hyson(Chinese green tea) is a django application which provides various extensio
 including Ext Direct implementation for class based views, Model and Form converters.
 
 
+WARNING: This code is not production ready right now
+
 Class based views and Ext Direct
 --------------------------------
 
@@ -65,6 +67,131 @@ model's or form's class will be applied and any errors would be sent back to ext
 Additionally CreateView can be exported into visual Ext form, Hyson will export your view's form and if you user
 ModelForm it will export your model as well(check model convertation part)
 so basically you need to write your Django code and Hyson will turn it into working GUI in a second.
+
+
+ListView
+--------
+
+In order to expose ListView you need to add ExtDirect mixin to the class definition::
+
+    class DataList(BaseListView, ExtDirect):
+        model = DataModel
+
+and convert your ListView to javascript by running::
+
+    ./manage.py listview_to_window your_app.views.DataList > ./static/DataList.js
+
+or::
+
+    ./manage.py listview_to_grid your_app.views.DataList > ./static/DataList.js
+
+path to DataList may be different for your project and it's not required to redirect output to file, you can omit
+it and check output in your terminal. listview_to_window acts exactly like listview_to_grid but will wrap grid into
+modal window
+
+By running this command you will generate a file with complete grid definition with required model definition,
+columns and configured proxy. As this point you can either use this file as-is, extend it(so you wouldn't need to redo
+you changes of you change yout morel or listview) or directly edit in your editor.::
+
+    Ext.onReady(function() {
+        Ext.define('DataListWindow', {
+            extend: 'Ext.window.Window',
+            width: "50%",
+            layout: "fit",
+            xtype: "window",
+            modal: true,
+            height: "50%",
+            title: "<verbose_plural of your model>",
+            items: {
+                xtype: "grid",
+                store: {
+                    model: "DataModel",
+                    proxy: {
+                        directFn: ext.DataList,
+                        type: "direct"
+                    }
+                },
+                columns: [
+                    {
+                        text: "Name",
+                        dataIndex: "name",
+                        flex: 1
+                    },
+                    ...
+                ]
+            }
+        });
+
+        Ext.define('DataModel', {
+            extend: "Ext.data.Model",
+            fields: [
+                {
+                    type: "string",
+                    name: "id"
+                },
+                {
+                    type: "int",
+                    name: "project"
+                },
+                ...
+            ],
+            validations: [
+                {
+                    field: "name",
+                    type: "length",
+                    max: 511
+                },
+                {
+                    field: "name",
+                    type: "presence"
+                }
+                ...
+            ]
+        });
+    });
+
+
+
+
+Passing additional parameters
+`````````````````````````````
+
+A common way of adding additional parameters to a grid is by creating 'beforeload' listener for store and setting
+store's proxy 'extraParams' values like this::
+
+    listeners: {
+        beforeload: function(store, operation){
+            store.proxy.extraParams = {
+                param: value
+            };
+        }
+    }
+
+In order to use proxy parameters on server side(for example to perfom addition filtering of data), you need
+to override get_queryset function of your class based view and use 'ext_data' property::
+
+    class DataList(BaseListView, ExtDirect):
+        model = DataModel
+
+        def get_queryset(self):
+            qs = self.model.objects.all()
+
+            project = self.ext_data.get("param")
+
+            if project is not None:
+                qs = qs.filter(param=param)
+
+            return qs
+
+you can use helper method provided by ExtDirect to make things even shorter::
+
+    class DataList(BaseListView, ExtDirect):
+        model = DataModel
+
+        def get_queryset(self):
+            qs = self.model.objects.all()
+            qs = self._filter_ne(qs, "param")
+            return qs
 
 
 Converting models

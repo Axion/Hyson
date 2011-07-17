@@ -232,11 +232,12 @@ class Router(View):
             return self._response(action, method, True, None, tid)
 
 
-    def _handle_listview(self, action, method, tid, klass):
+    def _handle_listview(self, action, method, tid, klass, data):
         instance = klass()
         #instance.request = request
         #instance.object = None
         #from django.core import serializers
+        instance.ext_data = data[0]
         object_list = instance.get_queryset()
 
         results = list()
@@ -270,13 +271,14 @@ class Router(View):
         action = request.get("action")
         method = request.get("method")
         tid = request.get("tid")
+        data = request.get('data')
 
         klass = ExtRegister.registered_classes[action][method]
 
         if has_base(klass, BaseCreateView):
-            return self._handle_createview(action, method, tid, klass)
+            return self._handle_createview(action, method, tid, klass, request)
         elif has_base(klass, BaseListView):
-            return self._handle_listview(action, method, tid, klass)
+            return self._handle_listview(action, method, tid, klass, data)
 
     def _wrap_response(self, response, upload):
         response = simplejson.dumps(response, ensure_ascii=False)
@@ -379,10 +381,18 @@ class ExtRegister(type):
                     #exported_methods[module].append({'params': args, 'name': action, 'formHandler': True})
                     exported_methods[module].append({'len': 0, 'name': action, 'formHandler': True})
                 else:
-                    exported_methods[module].append({'len': 0, 'name': action})
+                    exported_methods[module].append({'len': 1, 'name': action})
 
         return exported_methods
 
 
 class ExtDirect(object):
     __metaclass__ = ExtRegister
+
+    def _filter_ne(self, qs, param):
+        val = self.ext_data.get(param)
+
+        if param is not None:
+            qs = qs.filter(**{'%s__%s' % (param, 'exact'): val})
+
+        return qs
