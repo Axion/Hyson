@@ -24,7 +24,7 @@ In order to use Hyson's Ext Direct implementation you need to do following steps
 
 0. Clone hyson repo and put it into your python path
 
-1. In your urls.py
+1. In your urls.py::
 
     from hyson.views import API, Router
 
@@ -38,7 +38,7 @@ In order to use Hyson's Ext Direct implementation you need to do following steps
 By adding this lines you define a configuration url which will tell Ext what functions you export and a router url
 which will be used to call this functions
 
-2. In your views.py
+2. In your views.py::
 
     from django.views.generic.edit import BaseCreateView
     from hyson.views import ExtJSONResponse, ExtResponseException
