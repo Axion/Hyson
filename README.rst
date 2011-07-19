@@ -1,6 +1,6 @@
 .. image:: https://github.com/Axion/Hyson/blob/master/static/hyson.png?raw=true
 
-Hyson(Chinese green tea) is a django application which provides various extensions for simplier Ext.js integration
+Hyson(Chinese green tea) is a django application which provides various extensions for simplier Ext JS 4 integration
 including Ext Direct implementation for class based views, Model and Form converters.
 
 
@@ -319,6 +319,44 @@ output::
         },
         width: "90%"
     }
+
+Please note that this classes do not check provided params in any way and will output them as-as.
+
+Charting
+--------
+
+Ext JS 4 provides powerfull charting capabilities which can be utilized in Django project by using ExtChartView class.::
+
+    from random import random
+    class BarChart(ExtChartView, ExtDirect):
+        xtype = 'bar'
+        series = ['data1', 'data2']
+
+        def get_series(self):
+            return [{self.series[0]: random(), self.series[1]: random()} for i in range(11)]
+
+you can convert ExtChartView to Ext JS chart by running::
+
+    ./manage.py chartview_to_chart your_app.views.BarChart > ./static/BarChart.js
+
+output::
+
+    ---
+
+
+If you need to configure Chart output - you can use 'defaults' property of ExtChartView to override 'defaults' of
+ExtChart created for output::
+
+      class BarChart(ExtChartView, ExtDirect):
+          defaults = {
+            'animate': False
+          }
+
+          ...
+
+output::
+
+    ---
 
 
 License

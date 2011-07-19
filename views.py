@@ -221,8 +221,7 @@ class Router(View):
             "type":"rpc",
             "tid": tid,
             "action": action,
-            "method": method,
-
+            "method": method
         }
 
         if result is not None:
@@ -259,9 +258,6 @@ class Router(View):
 
     def _handle_listview(self, action, method, tid, klass, data, page, start, limit):
         instance = klass()
-        #instance.request = request
-        #instance.object = None
-        #from django.core import serializers
         instance.ext_data = data
         object_list = instance.get_queryset()
         total = None
@@ -282,7 +278,6 @@ class Router(View):
                 object_list = object_list[start:start+limit]
 
             for object in object_list:
-
                 if isinstance(object, dict):
                     fields = object
                 else:
@@ -308,6 +303,12 @@ class Router(View):
 
         return self._response(action, method, True, None, tid, results, total)
 
+    def _handle_chart(self, action, method, tid, klass):
+        instance = klass()
+        instance.request = self.request
+        results = instance.get_series()
+        return self._response(action, method, True, None, tid, results)
+
     def _do_request(self, request):
         """
         Execute single call, link to CRUD django view if registered
@@ -327,6 +328,9 @@ class Router(View):
             start = int(data.get('start'))
             limit = int(data.get('limit'))
             return self._handle_listview(action, method, tid, klass, data, page, start, limit)
+        elif has_base(klass, ExtChartView):
+            return self._handle_chart(action, method, tid, klass)
+
 
     def _wrap_response(self, response, upload):
         response = simplejson.dumps(response, ensure_ascii=False, cls=DjangoExtJSONEncoder)
@@ -444,3 +448,7 @@ class ExtDirect(object):
             qs = qs.filter(**{'%s__%s' % (param, 'exact'): val})
 
         return qs
+
+
+class ExtChartView(object):
+    pass

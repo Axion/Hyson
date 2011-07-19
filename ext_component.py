@@ -104,3 +104,33 @@ class ExtGrid(ExtComponent):
             }
         },
     }
+
+class ExtChart(ExtComponent):
+    class_name = "Ext.chart.Chart"
+    defaults = {
+        'xtype': 'chart',
+        'animate': True,
+        'shadow': True,
+        'axes': [{
+            'type': 'Numeric',
+            'position': 'bottom',
+            'fields': ['data1'],
+            'title': 'Number of Hits',
+            'grid': True,
+            'minimum': 0
+        }, {
+            'type': 'Category',
+            'position': 'left',
+            'fields': ['name'],
+            'title': 'Month of the Year'
+        }],
+        'store': {
+            'proxy': {
+                'type': 'direct',
+                'reader': {
+                    'type': 'json',
+                    'root': 'data'
+                }
+            }
+        },
+    }

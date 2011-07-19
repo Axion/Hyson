@@ -53,7 +53,6 @@ class Command(BaseCommand):
         return instance.model
 
     def handle(self, *args, **options):
-
         view = load_obj(args[0])
         model = self._get_model(view)
 
