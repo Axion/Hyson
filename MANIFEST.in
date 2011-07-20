@@ -1,0 +1,4 @@
+include hyson/*.py
+recursive-include docs *.rst
+recursive-include static *.png
+recursive-include hyson/management *.py

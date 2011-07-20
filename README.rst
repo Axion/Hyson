@@ -256,6 +256,25 @@ it will be called for every QuerySet entry before serializing.::
             }
 
 
+DetailView
+----------
+
+You can use DetailView to generate Ext JS DataView component, by default Hyson will provide a very simple base template,
+it's up to you to implement additional display logic.
+
+
+DeleteView
+----------
+
+DeleteView doen't produce any visual components, but may be used with Ext JS components like Grids and as part of APIsde
+
+API
+---
+
+Ext JS components like Grid allows to perform more than one CRUD actions on items, for example you may allow users to
+add, delete and edit rows. In this case, instead of providing 'directFn' function of your proxy - you provide and
+api.
+
 
 Converting models
 -----------------
