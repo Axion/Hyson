@@ -1,4 +1,5 @@
 import abc
+import decimal
 import datetime
 import time
 
@@ -7,7 +8,11 @@ from django.http import HttpResponse
 from django.views.generic import View
 from django.utils import simplejson, datetime_safe
 
+from django.views.generic.edit import BaseCreateView
+from django.views.generic.detail import BaseDetailView
+
 from hyson.utils import extract_form_fields
+from hyson.model import get_field_values
 
 def autodiscovery():
     """
@@ -59,8 +64,8 @@ def has_base(klass, base):
 
     return False
 
-
-
+from django.db.models import ImageField, FileField
+from django.db.models.fields.files import FieldFile
 class DjangoExtJSONEncoder(simplejson.JSONEncoder):
     """
     JSONEncoder subclass that knows how to encode date/time and decimal types.
@@ -77,6 +82,8 @@ class DjangoExtJSONEncoder(simplejson.JSONEncoder):
             return int(time.mktime(o.timetuple()))
         elif isinstance(o, decimal.Decimal):
             return str(o)
+        elif isinstance(o, FieldFile):
+            return unicode(o.url)
         else:
             return super(DjangoExtJSONEncoder, self).default(o)
 
@@ -309,6 +316,14 @@ class Router(View):
         results = instance.get_series()
         return self._response(action, method, True, None, tid, results)
 
+    def _handle_detailview(self, action, method, tid, klass, data):
+        instance = klass()
+        instance.request = self.request
+        instance.kwargs = data[0]
+        model = instance.get_object()
+        results = get_field_values(model)
+        return self._response(action, method, True, None, tid, results)
+
     def _do_request(self, request):
         """
         Execute single call, link to CRUD django view if registered
@@ -330,6 +345,8 @@ class Router(View):
             return self._handle_listview(action, method, tid, klass, data, page, start, limit)
         elif has_base(klass, ExtChartView):
             return self._handle_chart(action, method, tid, klass)
+        elif has_base(klass, BaseDetailView):
+            return self._handle_detailview(action, method, tid, klass, data)
 
 
     def _wrap_response(self, response, upload):
@@ -388,9 +405,6 @@ class API(View):
 
         #return HttpResponse(simplejson.dumps(config), content_type='application/json',)
         
-
-from django.views.generic.edit import BaseCreateView
-
 
 class ExtRegister(type):
 

@@ -5,6 +5,32 @@ from hyson.ordereddict import OrderedDict
 from hyson.field_types import FIELD_TYPES
 from hyson.utils import dejsonize
 
+def get_field_values(model):
+    fields = dict()
+
+    for field in model._meta._fields():
+
+        #if field.name == 'id':
+        #    continue
+
+        name = field.name
+        
+        get_choice = 'get_%s_display' % name
+        get_id = '%s_id' % name
+
+        if hasattr(model, get_choice):
+            value = getattr(model, get_choice)()
+        elif hasattr(model, get_id):
+            value = getattr(model, get_id)
+        else:
+            value = getattr(model, name)
+
+        fields[name] = value
+
+    return fields
+
+
+
 def convert(klass):
     model_name = klass.__name__
 

@@ -1,6 +1,6 @@
 .. image:: https://github.com/Axion/Hyson/blob/master/static/hyson.png?raw=true
 
-Hyson(Chinese green tea) is a django application which provides various extensions for simplier Ext JS 4 integration
+Hyson(Chinese green tea) is a django application which provides various extensions for simpler Ext JS 4 integration
 including Ext Direct implementation for class based views, Model and Form converters.
 
 
@@ -213,6 +213,11 @@ ExtDirect mixin will take care of pagination for you, if you provide 'paginate_b
 will use this value when generating js for your view and will paginate using only this amount of items, if you don't
 provide paginate_by, hyson will use ranges provided by client's request.
 
+MPTT
+````
+
+You can use ListView to generate tree if your model is registered by mptt.
+
 Changing queryset results
 '''''''''''''''''''''''''
 Please keep in mind that changing queryset in get_queryset may be a bad idea if you don't do it lazily and use
@@ -259,8 +264,15 @@ it will be called for every QuerySet entry before serializing.::
 DetailView
 ----------
 
-You can use DetailView to generate Ext JS DataView component, by default Hyson will provide a very simple base template,
-it's up to you to implement additional display logic.
+You can use DetailView to generate Ext JS DataView component, by default Hyson will provide a very simple base template
+that will display every property of your Model, it's up to you to implement additional display logic.
+
+You need to provide ID to select entry to display, by default it's ID of the model, but you can configure DetailsView
+as if you would use it without Hyson to use different field.
+
+There are lot's of ways to pass your id, but two mos common are either defining your own event listener for the store:::
+
+    
 
 
 DeleteView

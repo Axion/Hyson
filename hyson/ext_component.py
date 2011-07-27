@@ -102,7 +102,7 @@ class ExtGrid(ExtComponent):
                     'root': 'data'
                 }
             }
-        },
+        }
     }
 
 class ExtChart(ExtComponent):
@@ -132,5 +132,19 @@ class ExtChart(ExtComponent):
                     'root': 'data'
                 }
             }
-        },
+        }
+    }
+
+
+class DataView(ExtComponent):
+    class_name = "Ext.view.View"
+    defaults = {
+        'xtype': 'dataview',
+        'itemSelector': 'div.thumb-wrap',
+        'emptyText': '',
+        'store': {
+            'proxy': {
+                'type': 'direct'
+            }
+        }
     }
