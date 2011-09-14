@@ -389,6 +389,11 @@ output::
 
     ---
 
+Generating Ext js app skeleton
+------------------------------
+Hyson provides manage.py command to generate base Ext js powered application::
+
+    ./manage.py startextapp <app_name>
 
 License
 -------
